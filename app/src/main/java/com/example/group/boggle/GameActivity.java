@@ -2,7 +2,9 @@ package com.example.group.boggle;
 
 import android.content.ClipData;
 import android.content.Context;
+import android.content.Intent;
 import android.content.res.AssetManager;
+import android.os.CountDownTimer;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.GridLayout;
@@ -36,11 +38,12 @@ public class GameActivity extends AppCompatActivity implements View.OnClickListe
     ArrayList<String> word = new ArrayList<>();
     private GridLayout mGrid;
     private Random random;
+    CountDownTimer timer;
     @BindView(R.id.newWord) Button mNewWord;
     @BindView(R.id.submitWord) Button mSubmitWord;
     @BindView(R.id.wordInput) EditText mEditText;
     @BindView(R.id.answerLog) TextView mAnswerLog;
-
+    @BindView(R.id.timer) TextView mTimer;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -52,16 +55,19 @@ public class GameActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     @Override
+    public void onBackPressed() {
+        timer.cancel();
+        startActivity(new Intent(this, MainActivity.class));
+    }
+
+    @Override
     public void onClick (View v){
         if(v == mNewWord) {
-            mGrid.removeAllViewsInLayout();
-            mAnswerLog.setText(null);
-            mEditText.setText(null);
-            word.clear();
-            Toast.makeText(GameActivity.this,"new word",Toast.LENGTH_LONG).show();
-            runGame();
+            timer.cancel();
+            newGame();
         } else if (v == mSubmitWord){
             mAnswerLog.setText(null);
+            timer.cancel();
             String word = mEditText.getText().toString();
             if(wordCheck(word)){
                 mAnswerLog.setText("Correct!");
@@ -73,34 +79,7 @@ public class GameActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
-    public boolean wordCheck(String wordToCheck) {
-        try {
-            BufferedReader in = new BufferedReader(new InputStreamReader(getAssets().open("localDictionary/usDictionary.txt")));
-            Toast.makeText(GameActivity.this,"ran",Toast.LENGTH_LONG).show();
-            String str;
-            int invalidWord = 0;
-            String joined = TextUtils.join("", word);
-            for(int i = 0; i < wordToCheck.length(); i++){
-                char character = wordToCheck.charAt(i);
-                if(joined.indexOf(character) != -1){
-                } else {
-                    invalidWord =+1;
-                }
-            }
-            while ((str = in.readLine()) != null) {
-                    if (invalidWord<=0 && wordToCheck.length() >= 3 && str.equals(wordToCheck)) {
-                        Toast.makeText(GameActivity.this,str,Toast.LENGTH_LONG).show();
-                        return true;
-                }
-            }
-            in.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return false;
-    }
-
-     class TouchListener implements View.OnTouchListener {
+    private class TouchListener implements View.OnTouchListener {
         @Override
         public boolean onTouch(View view, MotionEvent motionEvent) {
             final ClipData data = ClipData.newPlainText("", "");
@@ -111,7 +90,7 @@ public class GameActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
-     class DragListener implements View.OnDragListener {
+    private class DragListener implements View.OnDragListener {
         @Override
         public boolean onDrag(View v, DragEvent event) {
             final View view = (View) event.getLocalState();
@@ -179,5 +158,55 @@ public class GameActivity extends AppCompatActivity implements View.OnClickListe
             text.setText(word.get(i));
             mGrid.addView(itemView);
         }
+        startTimer();
+    }
+
+    public void startTimer(){
+        timer = new CountDownTimer(10000, 1000) {
+
+            public void onTick(long millisUntilFinished) {
+                mTimer.setText("seconds remaining: " + millisUntilFinished / 1000);
+            }
+
+            public void onFinish() {
+                timer.cancel();
+                newGame();
+            }
+        }.start();
+    }
+
+    private void newGame(){
+        mGrid.removeAllViewsInLayout();
+        mAnswerLog.setText(null);
+        mEditText.setText(null);
+        word.clear();
+        runGame();
+    }
+
+    public boolean wordCheck(String wordToCheck) {
+        try {
+            BufferedReader in = new BufferedReader(new InputStreamReader(getAssets().open("localDictionary/usDictionary.txt")));
+            Toast.makeText(GameActivity.this,"Checking",Toast.LENGTH_LONG).show();
+            String str;
+            int invalidWord = 0;
+            String joined = TextUtils.join("", word);
+            for(int i = 0; i < wordToCheck.length(); i++){
+                char character = wordToCheck.charAt(i);
+                if(joined.indexOf(character) != -1){
+                } else {
+                    invalidWord =+1;
+                }
+            }
+            while ((str = in.readLine()) != null) {
+                    if (invalidWord<=0 && wordToCheck.length() >= 3 && str.equals(wordToCheck)) {
+                        Toast.makeText(GameActivity.this,str,Toast.LENGTH_LONG).show();
+                        return true;
+                }
+            }
+            in.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return false;
     }
 }

@@ -11,9 +11,12 @@ import android.support.v7.widget.GridLayout;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.DragEvent;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -30,7 +33,7 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 
 
-public class GameActivity extends AppCompatActivity implements View.OnClickListener {
+public class GameActivity extends AppCompatActivity implements View.OnClickListener, TextView.OnEditorActionListener {
     private static final String TAG = "MyActivity";
     private static final int wordLength = 8;
     String[] alphabets ={"a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z"};
@@ -52,6 +55,7 @@ public class GameActivity extends AppCompatActivity implements View.OnClickListe
         runGame();
         mNewWord.setOnClickListener(this);
         mSubmitWord.setOnClickListener(this);
+        mEditText.setOnEditorActionListener(this);
     }
 
     @Override
@@ -66,17 +70,21 @@ public class GameActivity extends AppCompatActivity implements View.OnClickListe
             timer.cancel();
             newGame();
         } else if (v == mSubmitWord){
-            mAnswerLog.setText(null);
-            timer.cancel();
-            String word = mEditText.getText().toString();
-            if(wordCheck(word)){
-                mAnswerLog.setText("Correct!");
-            }else {
-                mAnswerLog.setText("False!");
-            }
+            getResult();
         }else {
             Log.wtf(TAG, "oh-no!");
         }
+    }
+
+    @Override
+    public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+        if (actionId == EditorInfo.IME_ACTION_DONE) {
+            InputMethodManager imm = (InputMethodManager)v.getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+            imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
+            getResult();
+            return true;
+        }
+        return false;
     }
 
     private class TouchListener implements View.OnTouchListener {
@@ -183,7 +191,18 @@ public class GameActivity extends AppCompatActivity implements View.OnClickListe
         runGame();
     }
 
-    public boolean wordCheck(String wordToCheck) {
+    private void getResult(){
+        mAnswerLog.setText(null);
+        timer.cancel();
+        String word = mEditText.getText().toString();
+        if(wordCheck(word)){
+            mAnswerLog.setText("Correct!");
+        }else {
+            mAnswerLog.setText("False!");
+        }
+    }
+
+    private boolean wordCheck(String wordToCheck) {
         try {
             BufferedReader in = new BufferedReader(new InputStreamReader(getAssets().open("localDictionary/usDictionary.txt")));
             Toast.makeText(GameActivity.this,"Checking",Toast.LENGTH_LONG).show();
